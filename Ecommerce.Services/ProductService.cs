@@ -2,12 +2,10 @@
 using ECommerce.Domain.Contracts;
 using ECommerce.Domain.Entities.ProductModule;
 using ECommerce.Services.Abstraction;
+using ECommerce.Services.Specifications.ProductSpecifications;
+using ECommerce.Shared;
+using ECommerce.Shared.CommonResponses;
 using ECommerce.Shared.DTOs.ProductDTOs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ECommerce.Services
 {
@@ -15,33 +13,51 @@ namespace ECommerce.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        public ProductService(IUnitOfWork unitOfWork,IMapper mapper) 
+        public ProductService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
         public async Task<IEnumerable<BrandDTO>> GetAllBrandsAsync()
         {
-            var brands = await _unitOfWork.GetRepository<ProductBrand,int>().GetAllAsync();
-            
-            return _mapper.Map<IEnumerable<BrandDTO>>(brands);   
+            var brands = await _unitOfWork.GetRepository<ProductBrand, int>().GetAllAsync();
+
+            return _mapper.Map<IEnumerable<BrandDTO>>(brands);
         }
 
-        public async Task<IEnumerable<ProductDTO>> GetAllProductsAsync()
+        public async Task<PaginatedResult<ProductDTO>> GetAllProductsAsync(ProductQueryParams queryParams)
         {
-            var product = await _unitOfWork.GetRepository<Product,int>().GetAllAsync();
-            return _mapper.Map<IEnumerable<ProductDTO>>(product);
+            var repo = _unitOfWork.GetRepository<Product, int>();
+            var spec = new ProductWithTypeAndBrandSpecification(queryParams);
+            var product = await repo.GetAllAsync(spec);
+            var productWithCountSpec = new ProductWithCountSpecifications(queryParams);
+            var TotalCount = await repo.CountAsync(productWithCountSpec);
+            var DataToReturn = _mapper.Map<IEnumerable<ProductDTO>>(product);
+            var countOfReturnedData = DataToReturn.Count();
+            return new PaginatedResult<ProductDTO>(
+                queryParams.PageIndex,
+                countOfReturnedData,
+                TotalCount,
+                DataToReturn);
         }
 
         public async Task<IEnumerable<TypeDTO>> GetAllTypesAsync()
         {
-           var type = await _unitOfWork.GetRepository<ProductType,int>().GetAllAsync();
-            return _mapper.Map<IEnumerable<TypeDTO>>(type);
+            var types = await _unitOfWork.GetRepository<ProductType, int>().GetAllAsync();
+            return _mapper.Map<IEnumerable<TypeDTO>>(types);
         }
 
-        public async Task<ProductDTO> GetProductByIdAsync(int id)
+        public async Task<Result<ProductDTO>> GetProductByIdAsync(int id)
         {
-            var product = await _unitOfWork.GetRepository<Product,int>().GetByIdAsync(id);
+            var spec = new ProductWithTypeAndBrandSpecification(id);
+            var product = await _unitOfWork.GetRepository<Product, int>().GetByIdAsync(spec);
+            if (product is null)
+            {
+                return Error.NotFound(
+                    $"Product.NotFound",
+                    $"Product with id {id} not found."
+                    );
+            }
             return _mapper.Map<ProductDTO>(product);
         }
     }

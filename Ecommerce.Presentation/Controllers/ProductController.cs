@@ -1,41 +1,40 @@
 ﻿using ECommerce.Services.Abstraction;
+using ECommerce.Shared;
 using ECommerce.Shared.DTOs.ProductDTOs;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ECommerce.Presentation.Controllers
 {
     [ApiController]
-    [Route(template:"api/[Controller]")]
-    public class ProductController: ControllerBase
+    [Route(template: "api/[Controller]")]
+    public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
         public ProductController(IProductService productService)
         {
             _productService = productService;
         }
-       
+
         [HttpGet("")]
         //Get:baseUrl/api/Products
-        public async Task<ActionResult<IEnumerable<ProductDTO>>> GetAllProducts()
+        //[RedisCache]
+        public async Task<ActionResult<PaginatedResult<ProductDTO>>> GetAllProducts(
+            [FromQuery] ProductQueryParams queryParams)
         {
-            var products = await _productService.GetAllProductsAsync();
+            var products = await _productService.GetAllProductsAsync(queryParams);
             return Ok(products);
         }
 
-        [HttpGet(template:"{id}")]
+        [HttpGet(template: "{id}")]
         //Get:baseUrl/api/Product/id
         public async Task<ActionResult<ProductDTO>> GetProduct(int id)
         {
             var product = await _productService.GetProductByIdAsync(id);
             return Ok(product);
+            // return HandleResult<ProductDTO>(product);
         }
 
-        [HttpGet(template:"brands")]
+        [HttpGet(template: "brands")]
         //Get:baseUrl/api/Products/brands
         public async Task<ActionResult<IEnumerable<BrandDTO>>> GetAllBrands()
         {
@@ -51,6 +50,6 @@ namespace ECommerce.Presentation.Controllers
             return Ok(types);
         }
 
-        
+
     }
 }

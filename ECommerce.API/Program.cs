@@ -1,14 +1,14 @@
 using ECommerce.API.Extensions;
 using ECommerce.Domain.Contracts;
+using ECommerce.Presentation.Controllers;
 using ECommerce.Presistence.Data.DataSeed;
 using ECommerce.Presistence.Data.DbContexts;
 using ECommerce.Presistence.Repositories;
 using ECommerce.Services;
-using ECommerce.Presentation.Controllers;
 using ECommerce.Services.Abstraction;
 using ECommerce.Services.MappingProfiles;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Writers;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 #region RegistrationServices 
@@ -31,15 +31,17 @@ builder.Services.AddScoped<IDataInitializer, DataInitializer>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddAutoMapper(typeof(ServiceAssemblyReference).Assembly);
 //builder.Services.AddAutoMapper(X => X.AddProfile<ProductProfile>());
-//builder.Services.AddTransient<ProductPictureUrlResolver>(); // This is not needed because we are using AutoMapper's DI to resolve the dependencies of the resolver
+builder.Services.AddTransient<ProductPictureUrlResolver>(); // This is not needed because we are using AutoMapper's DI to resolve the dependencies of the resolver
 builder.Services.AddScoped<IProductService, ProductService>();
 #endregion
 var app = builder.Build();
 
 
 await app.MigrateDataBaseAsync();
-await app.SeedDataAsync();
+//await app.MigrateIdentityDataBaseAsync(); //Later
 
+await app.SeedDataAsync();
+//await app.SeedIdentityDataAsync(); // Later
 
 #region Pipeline 
 
@@ -47,15 +49,19 @@ await app.SeedDataAsync();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.DisplayRequestDuration();
+        options.EnableFilter();
+        options.DocExpansion(DocExpansion.None);
+    });
 }
 app.UseStaticFiles();
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 #endregion
 await app.RunAsync();
- 
