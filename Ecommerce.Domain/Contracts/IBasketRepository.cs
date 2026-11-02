@@ -4,7 +4,7 @@ namespace ECommerce.Domain.Contracts
 {
     public interface IBasketRepository
     {
-        Task<CustomerBasket?> GetBasketByIdAsync(Guid basketId);
+        Task<CustomerBasket?> GetBasketAsync(string basketId);
         Task<CustomerBasket?> CreateOrUpdateBasketAsync(
             CustomerBasket basket,
             TimeSpan timeToLive = default);
