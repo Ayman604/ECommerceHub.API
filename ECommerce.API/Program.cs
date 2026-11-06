@@ -46,6 +46,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 builder.Services.AddScoped<IBasketRepository, BasketRepository>();
 builder.Services.AddScoped<IBasketService, BasketService>();
+
+builder.Services.AddScoped<ICacheRepositiory, CacheRepository>();
+builder.Services.AddScoped<ICacheService, CacheService>();
 #endregion
 var app = builder.Build();
 
