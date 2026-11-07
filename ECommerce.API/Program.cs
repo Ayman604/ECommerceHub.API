@@ -1,5 +1,6 @@
 using ECommerce.API.CustomMiddlewares;
 using ECommerce.API.Extensions;
+using ECommerce.API.Factories;
 using ECommerce.Domain.Contracts;
 using ECommerce.Presentation.Controllers;
 using ECommerce.Presistence.Data.DataSeed;
@@ -8,6 +9,7 @@ using ECommerce.Presistence.Repositories;
 using ECommerce.Services;
 using ECommerce.Services.Abstraction;
 using ECommerce.Services.MappingProfiles;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using Swashbuckle.AspNetCore.SwaggerUI;
@@ -50,6 +52,12 @@ builder.Services.AddScoped<IBasketService, BasketService>();
 
 builder.Services.AddScoped<ICacheRepositiory, CacheRepository>();
 builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = ApiResponseFactory.GenerateApiValidationResponse;
+
+});
+
 #endregion
 var app = builder.Build();
 
