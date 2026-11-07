@@ -1,3 +1,4 @@
+using ECommerce.API.CustomMiddlewares;
 using ECommerce.API.Extensions;
 using ECommerce.Domain.Contracts;
 using ECommerce.Presentation.Controllers;
@@ -60,7 +61,7 @@ await app.SeedDataAsync();
 //await app.SeedIdentityDataAsync(); // Later
 
 #region Pipeline 
-
+app.UseMiddleware<ExceptionHandlerMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
