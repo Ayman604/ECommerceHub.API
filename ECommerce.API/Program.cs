@@ -2,13 +2,17 @@ using ECommerce.API.CustomMiddlewares;
 using ECommerce.API.Extensions;
 using ECommerce.API.Factories;
 using ECommerce.Domain.Contracts;
+using ECommerce.Domain.Entities.IdentityModule;
 using ECommerce.Presentation.Controllers;
 using ECommerce.Presistence.Data.DataSeed;
 using ECommerce.Presistence.Data.DbContexts;
+using ECommerce.Presistence.IdentityData.DataSeed;
+using ECommerce.Presistence.IdentityData.DbContexts;
 using ECommerce.Presistence.Repositories;
 using ECommerce.Services;
 using ECommerce.Services.Abstraction;
 using ECommerce.Services.MappingProfiles;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
@@ -31,7 +35,8 @@ builder.Services.AddDbContext<StoreDbConetxt>(options =>
 
 // Befor Configuring Pipeline  You must Call Seed
 // You need to Call Data initializer
-builder.Services.AddScoped<IDataInitializer, DataInitializer>();
+builder.Services.AddKeyedScoped<IDataInitializer, DataInitializer>("Default");
+builder.Services.AddKeyedScoped<IDataInitializer, IdentityDataInitializer>("Identity");
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -57,16 +62,23 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.InvalidModelStateResponseFactory = ApiResponseFactory.GenerateApiValidationResponse;
 
 });
+builder.Services.AddDbContext<StoreIdentityDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnection"));
+});
 
+builder.Services.AddIdentityCore<ApplicationUser>()
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<StoreIdentityDbContext>();
 #endregion
 var app = builder.Build();
 
 
 await app.MigrateDataBaseAsync();
-//await app.MigrateIdentityDataBaseAsync(); //Later
+await app.MigrateIdentityDataBaseAsync();
 
 await app.SeedDataAsync();
-//await app.SeedIdentityDataAsync(); // Later
+await app.SeedIdentityDataAsync();
 
 #region Pipeline 
 app.UseMiddleware<ExceptionHandlerMiddleware>();
