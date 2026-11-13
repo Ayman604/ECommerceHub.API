@@ -94,7 +94,7 @@ builder
             ),
         };
     });
-builder.Services.AddScoped<IOrderService, OrderService>();
+//builder.Services.AddScoped<IOrderService, OrderService>();
 #endregion
 var app = builder.Build();
 
