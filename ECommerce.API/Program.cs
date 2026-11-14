@@ -24,9 +24,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 #region RegistrationServices 
-
 // Add services to the container.
-
+#region Controllers & API & CORS
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(ProductsController).Assembly);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -73,46 +72,24 @@ builder.Services.AddCors(options =>
             builder.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod();
         });
 });
-
+#endregion
+#region DataBase & DbContexts
 builder.Services.AddDbContext<StoreDbConetxt>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
-
-// Befor Configuring Pipeline  You must Call Seed
-// You need to Call Data initializer
-builder.Services.AddKeyedScoped<IDataInitializer, DataInitializer>("Default");
-builder.Services.AddKeyedScoped<IDataInitializer, IdentityDataInitializer>("Identity");
-
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-builder.Services.AddAutoMapper(typeof(ServiceAssemblyReference).Assembly);
-//builder.Services.AddAutoMapper(X => X.AddProfile<ProductProfile>());
-
-builder.Services.AddTransient<ProductPictureUrlResolver>(); // This is not needed because we are using AutoMapper's DI to resolve the dependencies of the resolver
-
-builder.Services.AddScoped<IProductService, ProductService>();
-
-builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-{
-    return ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!);
-});
-
-builder.Services.AddScoped<IBasketRepository, BasketRepository>();
-builder.Services.AddScoped<IBasketService, BasketService>();
-
-builder.Services.AddScoped<ICacheRepositiory, CacheRepository>();
-builder.Services.AddScoped<ICacheService, CacheService>();
-builder.Services.Configure<ApiBehaviorOptions>(options =>
-{
-    options.InvalidModelStateResponseFactory = ApiResponseFactory.GenerateApiValidationResponse;
-
 });
 builder.Services.AddDbContext<StoreIdentityDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnection"));
 });
-
+#endregion
+#region Data initializer
+// Befor Configuring Pipeline  You must Call Seed
+// You need to Call Data initializer
+builder.Services.AddKeyedScoped<IDataInitializer, DataInitializer>("Default");
+builder.Services.AddKeyedScoped<IDataInitializer, IdentityDataInitializer>("Identity");
+#endregion
+#region Identity & Authentication
 builder.Services.AddIdentityCore<ApplicationUser>()
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<StoreIdentityDbContext>();
@@ -137,16 +114,45 @@ builder
             ),
         };
     });
-//builder.Services.AddScoped<IOrderService, OrderService>();
+#endregion
+#region Infrastructure & External Services 
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    return ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!);
+});
+#endregion
+#region Repositories & Unit Of Work 
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IBasketRepository, BasketRepository>();
+builder.Services.AddScoped<ICacheRepositiory, CacheRepository>();
+#endregion
+#region Application Services 
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IBasketService, BasketService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+#endregion
+#region AutoMapper 
+builder.Services.AddAutoMapper(typeof(ServiceAssemblyReference).Assembly);
+//builder.Services.AddAutoMapper(X => X.AddProfile<ProductProfile>());
+//builder.Services.AddTransient<ProductPictureUrlResolver>(); // This is not needed because we are using AutoMapper's DI to resolve the dependencies of the resolver 
+#endregion
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = ApiResponseFactory.GenerateApiValidationResponse;
+
+});
 #endregion
 var app = builder.Build();
 
-
+#region Web Application Register 
 await app.MigrateDataBaseAsync();
 await app.MigrateIdentityDataBaseAsync();
 
 await app.SeedDataAsync();
 await app.SeedIdentityDataAsync();
+#endregion
 
 #region Pipeline 
 app.UseMiddleware<ExceptionHandlerMiddleware>();
